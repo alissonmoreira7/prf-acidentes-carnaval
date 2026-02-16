@@ -3,10 +3,16 @@ import pandas as pd
 # Padronização de Tipos e Limpeza de Nulos
 def transformar_dados(df):
     
-    df['data_inversa'] = pd.to_datetime(df['data_inversa'], errors='coerce', dayfirst=True)
-    df['horario'] = pd.to_timedelta(df['horario'])
+    #Conversão de data
+    data_br = pd.to_datetime(df['data_inversa'], dayfirst=True, errors='coerce')
+    data_iso = pd.to_datetime(df['data_inversa'], dayfirst=False, errors='coerce')
+    df['data_inversa'] = data_br.fillna(data_iso)
+
+
+    df['horario'] = pd.to_timedelta(df['horario'], errors='coerce')
     df['km'] = df['km'].str.replace(',', '.').astype(float)
-    df = df.dropna()
+
+    df = df.dropna(subset=['id'])
     df['id'] = df['id'].astype(int)
 
     return df
