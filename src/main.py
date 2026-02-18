@@ -7,8 +7,10 @@ def main():
     #Extraindo os dados brutos e unificando em um unico DataFrame
     df_bruto = extrair_dados()
 
+    #Limpando o DataFrame
     df_limpo = transformar_dados(df_bruto)
 
+    #Criando coluna para filtrar quais os registros que estão no período de carnaval
     df_final = adicionar_colunas(df_limpo)
 
     print('--- Pipeline finalizado com sucesso! ---')
