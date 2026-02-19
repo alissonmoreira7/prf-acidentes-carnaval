@@ -1,5 +1,6 @@
 from etl.extrator import extrair_dados
 from etl.tratador import transformar_dados, adicionar_colunas
+from databases.conector import conectar_banco
 
 def main():
     print('--- Iniciando Pipeline de Dados de Acidentes em Rodóvias Federais ---')
@@ -12,6 +13,11 @@ def main():
 
     #Criando coluna para filtrar quais os registros que estão no período de carnaval
     df_final = adicionar_colunas(df_limpo)
+
+    #Cria o motor de conexão para o banco de dados
+    engine_conec = conectar_banco()
+
+    
 
     print('--- Pipeline finalizado com sucesso! ---')
 
