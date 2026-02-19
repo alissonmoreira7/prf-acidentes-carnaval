@@ -1,5 +1,6 @@
 from etl.extrator import extrair_dados
 from etl.tratador import transformar_dados, adicionar_colunas
+from etl.carregador import carregar_dados
 from databases.conector import conectar_banco
 
 def main():
@@ -17,7 +18,8 @@ def main():
     #Cria o motor de conexão para o banco de dados
     engine_conec = conectar_banco()
 
-    
+    #Enviar o DataFrame para o Banco de Dados
+    carregar_dados(df_final, engine_conec)
 
     print('--- Pipeline finalizado com sucesso! ---')
 
