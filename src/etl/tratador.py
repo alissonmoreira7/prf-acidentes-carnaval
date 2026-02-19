@@ -8,8 +8,8 @@ def transformar_dados(df):
     data_iso = pd.to_datetime(df['data_inversa'], dayfirst=False, errors='coerce')
     df['data_inversa'] = data_br.fillna(data_iso)
 
-
     df['horario'] = pd.to_timedelta(df['horario'], errors='coerce')
+    df['horario'] = df['horario'].astype(str).str.extract(r'(\d{2}:\d{2}:\d{2})')[0]
     df['km'] = df['km'].str.replace(',', '.').astype(float)
 
     df = df.dropna(subset=['id'])
