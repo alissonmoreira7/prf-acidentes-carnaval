@@ -1,13 +1,18 @@
-from etl.extrator import extrair_dados
-from etl.tratador import transformar_dados, adicionar_colunas
-from etl.carregador import carregar_dados
-from databases.conector import conectar_banco
+import os
+from etl.pipeline_etl import PipelineETl
 
+DB_CONNECTION_STRING
 def main():
     print('--- Iniciando Pipeline de Dados de Acidentes em Rodóvias Federais ---')
 
+    # Centralização da configuração de caminhos aqui
+    caminho_arquivos = os.path.join('data', 'raw', '*.csv')
+
+    pipeline = PipelineETl(caminho_arquivos, engine)
+
+
     #Extraindo os dados brutos e unificando em um unico DataFrame
-    df_bruto = extrair_dados()
+    df_bruto = pipeline.extrair_dados()
 
     #Limpando o DataFrame
     df_limpo = transformar_dados(df_bruto)
