@@ -1,30 +1,30 @@
 import os
+from dotenv import load_dotenv
 from etl.pipeline_etl import PipelineETl
+from databases.conector import ConectorBanco
+load_dotenv()
 
-DB_CONNECTION_STRING
 def main():
     print('--- Iniciando Pipeline de Dados de Acidentes em Rodóvias Federais ---')
 
     # Centralização da configuração de caminhos aqui
     caminho_arquivos = os.path.join('data', 'raw', '*.csv')
 
-    pipeline = PipelineETl(caminho_arquivos, engine)
-
-
-    #Extraindo os dados brutos e unificando em um unico DataFrame
-    df_bruto = pipeline.extrair_dados()
-
-    #Limpando o DataFrame
-    df_limpo = transformar_dados(df_bruto)
-
-    #Criando coluna para filtrar quais os registros que estão no período de carnaval
-    df_final = adicionar_colunas(df_limpo)
+    prf_db_url = os.getenv('DB_CONNECTION_STRING')
+    pipeline = PipelineETl(caminho_arquivos)
 
     #Cria o motor de conexão para o banco de dados
-    engine_conec = conectar_banco()
+    conexao = ConectorBanco(prf_db_url)
+    engine =  conexao.conectar_banco()
+
+    pipeline.extrair_dados()
+
+    pipeline.transformar_dados()
+
+    pipeline.adicionar_colunas()
 
     #Enviar o DataFrame para o Banco de Dados
-    carregar_dados(df_final, engine_conec)
+    pipeline.carregar_dados(engine)
 
     print('--- Pipeline finalizado com sucesso! ---')
 

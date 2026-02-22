@@ -29,9 +29,8 @@ class PipelineETl:
         Realiza a higienização do DataFrame: padronização de datas, extração de horários 
         e garantia de integridade da chave primária (ID).
         """
-        if not self.df:
+        if self.df is None:
             raise ValueError("O DataFrame está vazio. Execute 'extrair_dados' primeiro.")
-
 
         #Conversão de datas 
         data_br = pd.to_datetime(self.df['data_inversa'], dayfirst=True, errors='coerce')

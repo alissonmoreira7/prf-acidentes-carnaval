@@ -1,10 +1,8 @@
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
-load_dotenv()
 
 class ConectorBanco():
-    def __init__(self, prf_db_url):
-        self.prf_db_url = prf_db_url
+    def __init__(self, db_url):
+        self.db_url = db_url
         
     def conectar_banco(self):
         """
@@ -13,7 +11,7 @@ class ConectorBanco():
         """
         try:
             # Cria o motor de conexão
-            engine = create_engine(self.prf_db_url)
+            engine = create_engine(self.db_url)
 
             # Testa a conexão
             with engine.connect():
