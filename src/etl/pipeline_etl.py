@@ -38,12 +38,14 @@ class PipelineETl:
         self.df['data_inversa'] = data_br.fillna(data_iso)
 
         self.df['horario'] = pd.to_timedelta(self.df['horario'], errors='coerce')
-
         self.df['horario'] = self.df['horario'].astype(str).str.extract(r'(\d{2}:\d{2}:\d{2})')[0]
+
         self.df['km'] = self.df['km'].str.replace(',', '.').astype(float)
 
         self.df = self.df.dropna(subset=['id'])
         self.df['id'] = self.df['id'].astype(int)
+
+        print("Tratamento bem sucedido!")
 
     def adicionar_colunas(self):
         """
@@ -67,6 +69,8 @@ class PipelineETl:
 
             self.df.loc[filtro, 'carnaval'] = 1
 
+        print("Adição de coluna bem sucedida!")
+
     def carregar_dados(self, engine):
         """
         Envio do DataFrame para o banco de dados relacional 
@@ -82,4 +86,4 @@ class PipelineETl:
             print("Envio para o banco bem sucedido!")
 
         except Exception as e:
-            raise RuntimeError(f"Erro ao carregar os dados para o banco relacionnal: {e}")
+            raise RuntimeError(f"Erro ao carregar os dados para o banco relacional: {e}")
