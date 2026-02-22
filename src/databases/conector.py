@@ -1,17 +1,25 @@
-import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-
 load_dotenv()
-def conectar_banco():
-    acid_conec_db = os.getenv('DB_CONNECTION_STRING')
 
-    try:
-        # Cria o motor de conexão
-        engine = create_engine(acid_conec_db)
-        print("Conexão com o MySQL efetuada!")
-        return engine
-    
-    except Exception as e:
-        print(f"Erro ao preparar a conexão: {e}")
-        return None
+class ConectorBanco():
+    def __init__(self, prf_db_url):
+        self.prf_db_url = prf_db_url
+        
+    def conectar_banco(self):
+        """
+        Cria o motor de conexão com o banco de dados usando SQLAlchemy
+        e realiza um teste de ping para garantir que o banco está online.
+        """
+        try:
+            # Cria o motor de conexão
+            engine = create_engine(self.prf_db_url)
+
+            # Testa a conexão
+            with engine.connect():
+                print("Conexão com o MySQL testada e efetuada com sucesso!")
+
+            return engine
+        
+        except Exception as e:
+            raise ConnectionError(f"Falha crítica ao conectar no banco de dados: {e}")
