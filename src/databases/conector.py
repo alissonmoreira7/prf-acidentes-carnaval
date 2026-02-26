@@ -1,3 +1,4 @@
+import pandas as pd
 from sqlalchemy import create_engine
 
 class ConectorBanco():
@@ -21,3 +22,13 @@ class ConectorBanco():
         
         except Exception as e:
             raise ConnectionError(f"Falha crítica ao conectar no banco de dados: {e}")
+        
+    def carregar_dataframe_acidentes(self, engine):
+        """
+            Coleta os dados diretamente do banco.
+        """
+        query = "SELECT * FROM acidentes_carnaval"
+
+        df = pd.read_sql(query, con = engine)
+
+        return df
