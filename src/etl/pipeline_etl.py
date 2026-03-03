@@ -1,9 +1,11 @@
 import glob
 import pandas as pd
+from abc import abstractmethod
 
 class PipelineETl:
-    def __init__(self, file_path):
+    def __init__(self, file_path, database_engine):
         self.file_path = file_path
+        self.engine = database_engine
         self.df = None
 
     def extrair_dados(self):
@@ -24,13 +26,43 @@ class PipelineETl:
 
         print(f'Extração concluida! O número total de registros é: {len(self.df)}')
 
+    def carregar_dados(self, nome_tabela):
+        """
+            Envio do DataFrame para o banco de dados relacional 
+        """
+        try:
+            self.df.to_sql(
+                name = nome_tabela,
+                con = self.engine,
+                if_exists = 'replace',
+                index = False,
+                chunksize = 5000,
+            )
+            print("Envio para o banco bem sucedido!")
+
+        except Exception as e:
+            raise RuntimeError(f"Erro ao carregar os dados para o banco relacional: {e}")
+    
+    @abstractmethod 
+    def transformar_dados(self):
+       pass
+
+    def adicionar_colunas(self):
+        pass
+
+    # Acessando o DataFrame bruto
+    def ver_dataframe(self):
+        return self.df
+        
+class PipelineETLAcidentes(PipelineETl):
     def transformar_dados(self):
         """
-        Realiza a higienização do DataFrame: padronização de datas, extração de horários 
-        e garantia de integridade da chave primária (ID).
+            Realiza a higienização do DataFrame: padronização de datas, extração de horários 
+            e garantia de integridade da chave primária (ID) para a classe PipelineETLAcidentes.
         """
+        
         if self.df is None:
-            raise ValueError("O DataFrame está vazio. Execute 'extrair_dados' primeiro.")
+            raise ValueError('O DataFrame está vazio. Execute "extrair_dados" primeiro.')
 
         #Conversão de datas 
         data_br = pd.to_datetime(self.df['data_inversa'], dayfirst=True, errors='coerce')
@@ -47,43 +79,28 @@ class PipelineETl:
 
         print("Tratamento bem sucedido!")
 
+        return super().transformar_dados()
+    
     def adicionar_colunas(self):
-        """
-        Adiciona a coluna para saber se é carnaval ou não
-        """
-        if self.df is None:
-            raise ValueError("O DataFrame está vazio. Execute 'extrair_dados' primeiro.")
+            """
+                Adiciona a coluna para saber se é carnaval ou não
+            """
+            if self.df is None:
+                raise ValueError("O DataFrame está vazio. Execute 'extrair_dados' primeiro.")
 
+            #Periodo de carnaval nos respectivos anos: 2023, 2024 e 2025
+            periodo_carnaval = [
+                ('2023-02-17', '2023-02-22'),
+                ('2024-02-09', '2024-02-14'),
+                ('2025-02-28', '2025-03-05')
+            ]
 
-        #Periodo de carnaval nos respectivos anos: 2023, 2024 e 2025
-        periodo_carnaval = [
-            ('2023-02-17', '2023-02-22'),
-            ('2024-02-09', '2024-02-14'),
-            ('2025-02-28', '2025-03-05')
-        ]
+            self.df['carnaval'] = 0
 
-        self.df['carnaval'] = 0
+            for inicio, fim in periodo_carnaval:
+                filtro = (self.df['data_inversa'] >= inicio) & (self.df['data_inversa'] <= fim)
 
-        for inicio, fim in periodo_carnaval:
-            filtro = (self.df['data_inversa'] >= inicio) & (self.df['data_inversa'] <= fim)
+                self.df.loc[filtro, 'carnaval'] = 1
 
-            self.df.loc[filtro, 'carnaval'] = 1
-
-        print("Adição de coluna bem sucedida!")
-
-    def carregar_dados(self, engine):
-        """
-        Envio do DataFrame para o banco de dados relacional 
-        """
-        try:
-            self.df.to_sql(
-                name = 'acidentes_carnaval',
-                con = engine,
-                if_exists = 'replace',
-                index = False,
-                chunksize = 5000,
-            )
-            print("Envio para o banco bem sucedido!")
-
-        except Exception as e:
-            raise RuntimeError(f"Erro ao carregar os dados para o banco relacional: {e}")
+            print("Adição de coluna bem sucedida!")
+            return super().adicionar_colunas()
