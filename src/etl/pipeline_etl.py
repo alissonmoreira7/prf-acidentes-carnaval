@@ -1,4 +1,6 @@
+import os
 import glob
+from tqdm import tqdm
 import pandas as pd
 from abc import abstractmethod
 
@@ -51,7 +53,9 @@ class PipelineETl:
         pass
 
     # Acessando o DataFrame bruto
-    def ver_dataframe(self):
+    def acessar_df(self):
+        if self.df is None:
+            raise ValueError('O DataFrame está vazio. Execute "extrair_dados" primeiro.')
         return self.df
         
 class PipelineETLAcidentes(PipelineETl):
@@ -104,3 +108,54 @@ class PipelineETLAcidentes(PipelineETl):
 
             print("Adição de coluna bem sucedida!")
             return super().adicionar_colunas()
+
+class PipelineETLMultas(PipelineETl):
+    def extrair_dados(self):
+        arquivos = glob.glob(self.file_path)
+
+        if not arquivos:
+            raise FileNotFoundError(f"Nenhum arquivo encontrado no caminho: {self.file_path}")
+        
+        print(f'Arquivos encontrados: {len(arquivos)}')
+
+        periodo_carnaval = [
+                ('2023-02-17', '2023-02-22'),
+                ('2024-02-09', '2024-02-14'),
+                ('2025-02-28', '2025-03-05')
+            ]
+        
+        lista_df_filtrado = []    
+        for arquivo in tqdm(arquivos, desc="Processando arquivos"):
+
+            chunks = pd.read_csv(
+                arquivo,
+                sep=';',
+                encoding='latin-1',
+                chunksize=100000,
+                low_memory=False,
+                usecols=[0, 1, 5, 6, 8, 16, 21]
+            )
+
+            for chunk in chunks:
+                chunk['data_temporaria'] = pd.to_datetime(chunk['Data da Infração (DD/MM/AAAA)'], format='%Y-%m-%d', errors='coerce')
+
+                filtro_geral = pd.Series(False, index=chunk.index)
+
+                for inicio, fim in periodo_carnaval:
+                    filtro_ano = (chunk['data_temporaria'] >= inicio) & (chunk['data_temporaria'] <= fim)
+                    filtro_geral = filtro_geral | filtro_ano
+
+                chunk_filtrado = chunk[filtro_geral].copy()
+                
+                chunk_filtrado = chunk_filtrado.drop(columns=['data_temporaria'])
+
+                if not chunk_filtrado.empty:
+                    lista_df_filtrado.append(chunk_filtrado)
+                    
+        if lista_df_filtrado:
+            self.df = pd.concat(lista_df_filtrado, ignore_index=True)
+        else:
+            self.df = pd.DataFrame()
+
+        print(f'Extração filtrada concluída! O número total de registros isolados é: {len(self.df)}')
+        return super().extrair_dados()
