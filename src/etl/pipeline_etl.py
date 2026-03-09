@@ -1,5 +1,5 @@
-import os
 import glob
+import logging as log
 from tqdm import tqdm
 import pandas as pd
 from abc import abstractmethod
@@ -19,14 +19,14 @@ class PipelineETl:
         if not arquivos:
             raise FileNotFoundError(f"Nenhum arquivo encontrado no caminho: {self.file_path}")
         
-        print(f'Arquivos encontrados: {len(arquivos)}')
+        log.info(f'Arquivos encontrados: {len(arquivos)}')
 
         # Unifica os arquivos
         lista_df = [pd.read_csv(f, sep=';', encoding='latin-1') for f in arquivos]
         
         self.df = pd.concat(lista_df, ignore_index=True)
 
-        print(f'Extração concluida! O número total de registros é: {len(self.df)}')
+        log.info(f'Extração concluida! O número total de registros é: {len(self.df)}')
 
     def carregar_dados(self, nome_tabela):
         """
@@ -40,10 +40,10 @@ class PipelineETl:
                 index = False,
                 chunksize = 5000,
             )
-            print("Envio para o banco bem sucedido!")
+            log.info("Envio para o banco bem sucedido!")
 
         except Exception as e:
-            raise RuntimeError(f"Erro ao carregar os dados para o banco relacional: {e}")
+            log.critical(f"Erro ao carregar os dados para o banco relacional: {e}")
     
     @abstractmethod 
     def transformar_dados(self):
@@ -55,7 +55,8 @@ class PipelineETl:
     # Acessando o DataFrame bruto
     def acessar_df(self):
         if self.df is None:
-            raise ValueError('O DataFrame está vazio. Execute "extrair_dados" primeiro.')
+            log.critical('O DataFrame está vazio. Execute "extrair_dados" primeiro.')
+
         return self.df
         
 class PipelineETLAcidentes(PipelineETl):
@@ -81,7 +82,7 @@ class PipelineETLAcidentes(PipelineETl):
         self.df = self.df.dropna(subset=['id'])
         self.df['id'] = self.df['id'].astype(int)
 
-        print("Tratamento bem sucedido!")
+        log.info("Tratamento bem sucedido!")
 
         return super().transformar_dados()
     
@@ -106,7 +107,8 @@ class PipelineETLAcidentes(PipelineETl):
 
                 self.df.loc[filtro, 'carnaval'] = 1
 
-            print("Adição de coluna bem sucedida!")
+            log.info("Adição de coluna bem sucedida!")
+
             return super().adicionar_colunas()
 
 class PipelineETLMultas(PipelineETl):
@@ -116,7 +118,7 @@ class PipelineETLMultas(PipelineETl):
         if not arquivos:
             raise FileNotFoundError(f"Nenhum arquivo encontrado no caminho: {self.file_path}")
         
-        print(f'Arquivos encontrados: {len(arquivos)}')
+        log.info(f'Arquivos encontrados: {len(arquivos)}')
 
         periodo_carnaval = [
                 ('2023-02-17', '2023-02-22'),
@@ -157,5 +159,4 @@ class PipelineETLMultas(PipelineETl):
         else:
             self.df = pd.DataFrame()
 
-        print(f'Extração filtrada concluída! O número total de registros isolados é: {len(self.df)}')
-        return super().extrair_dados()
+        log.info(f'Extração filtrada de multas concluída! O número total de registros isolados é: {len(self.df)}')
