@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine
 
-class ConectorBanco():
+class GestaoBanco():
     def __init__(self, db_url):
         self.db_url = db_url
         
