@@ -15,18 +15,21 @@ def main():
     engine = conexao.conectar_banco()
     
     pipelineAcidentes = PipelineETLAcidentes(caminho_acidentes, engine)
-    pipelineMultas = PipelineETLMultas(caminho_multas, engine)
+    pipelineMultasCarnaval = PipelineETLMultas(caminho_multas, engine)
+    pipelineMultasNormal = PipelineETLMultas(caminho_multas, engine)
 
     pipelineAcidentes.extrair_dados()
-    pipelineMultas.extrair_dados()
+    pipelineMultasCarnaval.extrair_dados_multas(carnaval=True)
+    pipelineMultasNormal.extrair_dados_multas(carnaval=False)
 
     pipelineAcidentes.transformar_dados()
     pipelineAcidentes.adicionar_colunas()
 
-    # Enviar o DataFrame para o Banco de Dados
+    # Enviar os DataFrames para o Banco de Dados
     pipelineAcidentes.carregar_dados('acidentes_carnaval')
-    pipelineMultas.carregar_dados('multas_carnaval')
-    
+    pipelineMultasCarnaval.carregar_dados('multas_carnaval')
+    pipelineMultasNormal.carregar_dados('multas_normal')    
+
     print('--- Pipeline finalizado com sucesso! ---')
 
 if __name__ == '__main__':

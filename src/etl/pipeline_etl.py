@@ -37,7 +37,7 @@ class PipelineETl:
                 con = self.engine,
                 if_exists = 'replace',
                 index = False,
-                chunksize = 5000,
+                chunksize = 10000,
             )
             print("Envio para o banco bem sucedido!")
 
@@ -109,9 +109,9 @@ class PipelineETLAcidentes(PipelineETl):
             return super().adicionar_colunas()
 
 class PipelineETLMultas(PipelineETl):
-    def extrair_dados(self):
+    def extrair_dados_multas(self, carnaval):
         """
-            Extração de dados aplicando o filtro de carnaval
+            Extração de dados de multas aplicando o filtro de carnaval
         """
         arquivos = glob.glob(self.file_path)
 
@@ -120,43 +120,90 @@ class PipelineETLMultas(PipelineETl):
         
         print(f'Arquivos encontrados: {len(arquivos)}')
 
-        periodo_carnaval = [
-                ('2023-02-17', '2023-02-22'),
-                ('2024-02-09', '2024-02-14'),
-                ('2025-02-28', '2025-03-05')
-            ]
-        
-        lista_df_filtrado = []    
-        for arquivo in tqdm(arquivos, desc="Processando arquivos"):
+        if (carnaval == True):
+            periodo_carnaval = [
+                    ('2023-02-17', '2023-02-22'),
+                    ('2024-02-09', '2024-02-14'),
+                    ('2025-02-28', '2025-03-05')
+                ]
+            
+            lista_df_filtrado = []    
+            for arquivo in tqdm(arquivos, desc="Processando multas (Período de Carnaval)"):
 
-            chunks = pd.read_csv(
-                arquivo,
-                sep=';',
-                encoding='latin-1',
-                chunksize=100000,
-                low_memory=False,
-                usecols=[0, 1, 5, 6, 8, 16, 21]
-            )
+                chunks = pd.read_csv(
+                    arquivo,
+                    sep=';',
+                    encoding='latin-1',
+                    chunksize=100000,
+                    low_memory=False,
+                    usecols=[0, 1, 5, 6, 8, 16, 21]
+                )
 
-            for chunk in chunks:
-                chunk['data_temporaria'] = pd.to_datetime(chunk['Data da Infração (DD/MM/AAAA)'], format='%Y-%m-%d', errors='coerce')
+                for chunk in chunks:
+                    chunk['data_temporaria'] = pd.to_datetime(chunk['Data da Infração (DD/MM/AAAA)'], format='%Y-%m-%d', errors='coerce')
 
-                filtro_geral = pd.Series(False, index=chunk.index)
+                    filtro_geral = pd.Series(False, index=chunk.index)
 
-                for inicio, fim in periodo_carnaval:
-                    filtro_ano = (chunk['data_temporaria'] >= inicio) & (chunk['data_temporaria'] <= fim)
-                    filtro_geral = filtro_geral | filtro_ano
+                    for inicio, fim in periodo_carnaval:
+                        filtro_ano = (chunk['data_temporaria'] >= inicio) & (chunk['data_temporaria'] <= fim)
+                        filtro_geral = filtro_geral | filtro_ano
 
-                chunk_filtrado = chunk[filtro_geral].copy()
-                
-                chunk_filtrado = chunk_filtrado.drop(columns=['data_temporaria'])
-
-                if not chunk_filtrado.empty:
-                    lista_df_filtrado.append(chunk_filtrado)
+                    chunk_filtrado = chunk[filtro_geral].copy()
                     
-        if lista_df_filtrado:
-            self.df = pd.concat(lista_df_filtrado, ignore_index=True)
-        else:
-            self.df = pd.DataFrame()
+                    chunk_filtrado = chunk_filtrado.drop(columns=['data_temporaria'])
 
-        print(f'Extração filtrada de multas concluída! O número total de registros isolados é: {len(self.df)}')
+                    if not chunk_filtrado.empty:
+                        lista_df_filtrado.append(chunk_filtrado)
+                        
+            if lista_df_filtrado:
+                self.df = pd.concat(lista_df_filtrado, ignore_index=True)
+            else:
+                self.df = pd.DataFrame()
+
+            print(f'Extração filtrada de multas do período de carnaval concluída! O número total de registros isolados é: {len(self.df)}')
+        
+        elif (carnaval == False):   
+            """
+                Extração de dados de multas sem aplicação do filtro de carnaval
+            """
+            periodo_carnaval = [
+                    ('2023-02-17', '2023-02-22'),
+                    ('2024-02-09', '2024-02-14'),
+                    ('2025-02-28', '2025-03-05')
+                ]
+            
+            lista_df = []    
+            for arquivo in tqdm(arquivos, desc="Processando multas (Período Normal)"):
+
+                chunks = pd.read_csv(
+                    arquivo,
+                    sep=';',
+                    encoding='latin-1',
+                    chunksize=100000,
+                    low_memory=False,
+                    usecols=[0, 1, 5, 6, 8, 16, 21]
+                )
+
+                for chunk in chunks:
+                    chunk['data_temporaria'] = pd.to_datetime(chunk['Data da Infração (DD/MM/AAAA)'], format='%Y-%m-%d', errors='coerce')
+
+                    filtro_geral = pd.Series(False, index=chunk.index)
+
+                    for inicio, fim in periodo_carnaval:
+                        filtro_ano = (chunk['data_temporaria'] >= inicio) & (chunk['data_temporaria'] <= fim)
+                        filtro_geral = filtro_geral | filtro_ano
+                        
+                    chunk_semfil = chunk[~filtro_geral].copy()
+                    
+                    chunk_semfil = chunk_semfil.drop(columns=['data_temporaria'])
+
+                    if not chunk_semfil.empty:
+                        lista_df.append(chunk_semfil)
+
+            if lista_df:
+                self.df = pd.concat(lista_df, ignore_index=True)
+            else:
+                self.df = pd.DataFrame()
+
+            print(f'Extração filtrada de multas fora do período de carnaval concluída! O número total de registros isolados é: {len(self.df)}')
+        
